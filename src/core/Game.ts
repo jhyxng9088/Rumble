@@ -8,6 +8,7 @@ import { ArenaWorld } from '../world/ArenaWorld';
 export class Game {
   private readonly engine: Engine;
   private readonly scene: Scene;
+  private readonly world: ArenaWorld;
   private readonly player: PlayerCharacter;
   private readonly camera: FollowCamera;
   private readonly input: InputController;
@@ -22,8 +23,8 @@ export class Game {
     this.applyResolutionCap();
 
     this.scene = new Scene(this.engine);
-    const world = new ArenaWorld(this.scene);
-    this.player = new PlayerCharacter(this.scene, world.spawnPoint);
+    this.world = new ArenaWorld(this.scene);
+    this.player = new PlayerCharacter(this.scene, this.world.spawnPoint);
     this.camera = new FollowCamera(this.scene, this.player.root.position);
     this.input = new InputController(joystickElement);
 
@@ -38,6 +39,7 @@ export class Game {
       const worldDirection = this.camera.toWorldDirection(inputVector.x, inputVector.y);
 
       this.player.update(deltaSeconds, worldDirection, inputVector.length());
+      this.world.constrainPlayerPosition(this.player.root.position, this.player.collisionRadius);
       this.camera.update(deltaSeconds, this.player.root.position);
       this.scene.render();
     });
