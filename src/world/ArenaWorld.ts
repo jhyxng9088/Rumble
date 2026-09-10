@@ -6,15 +6,28 @@ import { Vector3 } from '@babylonjs/core/Maths/math.vector';
 import { CreateBox } from '@babylonjs/core/Meshes/Builders/boxBuilder';
 import type { Scene } from '@babylonjs/core/scene';
 
+const PLAYABLE_HALF_WIDTH = 8.35;
+const PLAYABLE_HALF_DEPTH = 6.35;
+
 export class ArenaWorld {
   readonly spawnPoint = new Vector3(0, 0.02, -1.4);
 
   constructor(private readonly scene: Scene) {
     scene.clearColor = new Color4(0.055, 0.045, 0.08, 1);
-    scene.collisionsEnabled = true;
 
     this.createLighting();
     this.createArena();
+  }
+
+  constrainPlayerPosition(position: Vector3, radius: number): void {
+    position.x = Math.min(
+      Math.max(position.x, -PLAYABLE_HALF_WIDTH + radius),
+      PLAYABLE_HALF_WIDTH - radius
+    );
+    position.z = Math.min(
+      Math.max(position.z, -PLAYABLE_HALF_DEPTH + radius),
+      PLAYABLE_HALF_DEPTH - radius
+    );
   }
 
   private createLighting(): void {
@@ -37,7 +50,6 @@ export class ArenaWorld {
     const floor = CreateBox('arena-floor', { width: 18, depth: 14, height: 0.45 }, this.scene);
     floor.position.y = -0.24;
     floor.material = floorMaterial;
-    floor.checkCollisions = true;
 
     this.createWall('wall-north', new Vector3(0, 0.75, 6.8), new Vector3(18, 1.5, 0.42), wallMaterial);
     this.createWall('wall-south', new Vector3(0, 0.75, -6.8), new Vector3(18, 1.5, 0.42), wallMaterial);
@@ -64,7 +76,6 @@ export class ArenaWorld {
     }, this.scene);
     wall.position.copyFrom(position);
     wall.material = material;
-    wall.checkCollisions = true;
   }
 
   private createObstacle(name: string, position: Vector3, size: Vector3, material: StandardMaterial): void {
@@ -75,7 +86,6 @@ export class ArenaWorld {
     }, this.scene);
     obstacle.position.copyFrom(position);
     obstacle.material = material;
-    obstacle.checkCollisions = true;
   }
 
   private material(name: string, color: Color3): StandardMaterial {
