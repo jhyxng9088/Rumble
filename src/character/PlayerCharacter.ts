@@ -10,6 +10,7 @@ import type { Scene } from '@babylonjs/core/scene';
 
 const MOVE_SPEED = 4.8;
 const TURN_SPEED = 15;
+const VISUAL_SCALE = 1.14;
 
 export class PlayerCharacter {
   readonly root: Mesh;
@@ -30,6 +31,7 @@ export class PlayerCharacter {
 
     this.visualRoot = new TransformNode('player-visual', scene);
     this.visualRoot.parent = this.root;
+    this.visualRoot.scaling.setAll(VISUAL_SCALE);
     this.buildVisual(scene);
     this.createContactShadow(scene);
   }
@@ -59,85 +61,100 @@ export class PlayerCharacter {
 
   private animateWalk(deltaSeconds: number, inputMagnitude: number): void {
     const moving = inputMagnitude > 0.05;
-    this.walkTime += deltaSeconds * (moving ? 10.5 : 3.2);
+    this.walkTime += deltaSeconds * (moving ? 10.8 : 3.0);
 
-    const targetBob = moving ? Math.abs(Math.sin(this.walkTime)) * 0.075 : 0;
-    const idleBob = moving ? 0 : Math.sin(this.walkTime) * 0.012;
+    const step = Math.sin(this.walkTime);
+    const targetBob = moving ? Math.abs(step) * 0.082 : 0;
+    const idleBob = moving ? 0 : Math.sin(this.walkTime) * 0.013;
     this.visualRoot.position.y += (targetBob + idleBob - this.visualRoot.position.y) * Math.min(deltaSeconds * 15, 1);
 
-    const squash = moving ? 1 + Math.sin(this.walkTime * 2) * 0.026 : 1;
-    this.visualRoot.scaling.set(1 / squash, squash, 1 / squash);
+    const squash = moving ? 1 + Math.sin(this.walkTime * 2) * 0.030 : 1;
+    this.visualRoot.scaling.set(
+      VISUAL_SCALE / squash,
+      VISUAL_SCALE * squash,
+      VISUAL_SCALE / squash
+    );
 
-    const targetLean = moving ? 0.055 : 0;
-    const targetSway = moving ? Math.sin(this.walkTime) * 0.035 : 0;
+    const targetLean = moving ? 0.075 : 0;
+    const targetSway = moving ? step * 0.050 : 0;
     this.visualRoot.rotation.x += (targetLean - this.visualRoot.rotation.x) * Math.min(deltaSeconds * 9, 1);
     this.visualRoot.rotation.z += (targetSway - this.visualRoot.rotation.z) * Math.min(deltaSeconds * 10, 1);
   }
 
   private buildVisual(scene: Scene): void {
-    const fur = this.material(scene, 'bear-fur-mat', new Color3(0.96, 0.92, 0.84));
-    const muzzle = this.material(scene, 'bear-muzzle-mat', new Color3(0.84, 0.76, 0.64));
-    const hoodie = this.material(scene, 'bear-hoodie-mat', new Color3(0.12, 0.36, 0.78));
-    const hoodieLight = this.material(scene, 'bear-hoodie-light-mat', new Color3(0.20, 0.49, 0.94));
-    const hoodieDark = this.material(scene, 'bear-hoodie-dark-mat', new Color3(0.065, 0.19, 0.46));
-    const face = this.material(scene, 'bear-face-mat', new Color3(0.06, 0.052, 0.055));
+    const fur = this.material(scene, 'bear-fur-mat', new Color3(0.97, 0.93, 0.86));
+    const furShade = this.material(scene, 'bear-fur-shade-mat', new Color3(0.84, 0.77, 0.67));
+    const hoodie = this.material(scene, 'bear-hoodie-mat', new Color3(0.10, 0.34, 0.82));
+    const hoodieLight = this.material(scene, 'bear-hoodie-light-mat', new Color3(0.22, 0.52, 0.98));
+    const hoodieDark = this.material(scene, 'bear-hoodie-dark-mat', new Color3(0.045, 0.16, 0.46));
+    const face = this.material(scene, 'bear-face-mat', new Color3(0.055, 0.048, 0.052));
 
-    const body = CreateSphere('bear-body', { diameter: 1.16, segments: 16 }, scene);
+    const body = CreateSphere('bear-body', { diameter: 1.20, segments: 16 }, scene);
     body.parent = this.visualRoot;
-    body.position.y = 0.78;
-    body.scaling.set(0.94, 1.06, 0.80);
+    body.position.y = 0.76;
+    body.scaling.set(0.97, 1.05, 0.83);
     body.material = hoodie;
 
-    this.createSpherePart(scene, 'bear-hoodie-belly', new Vector3(0, 0.76, 0.43), new Vector3(0.72, 0.76, 0.28), hoodieDark);
-    this.createSpherePart(scene, 'bear-hoodie-hem', new Vector3(0, 0.46, 0.02), new Vector3(0.92, 0.28, 0.76), hoodie);
+    this.createSpherePart(scene, 'bear-hoodie-belly', new Vector3(0, 0.76, 0.45), new Vector3(0.76, 0.78, 0.27), hoodieLight);
+    this.createSpherePart(scene, 'bear-hoodie-hem', new Vector3(0, 0.44, 0.01), new Vector3(0.96, 0.27, 0.79), hoodieDark);
+    this.createSpherePart(scene, 'bear-pocket', new Vector3(0, 0.58, 0.66), new Vector3(0.46, 0.18, 0.08), hoodieDark);
 
-    const head = CreateSphere('bear-head', { diameter: 1.34, segments: 18 }, scene);
+    const head = CreateSphere('bear-head', { diameter: 1.48, segments: 20 }, scene);
     head.parent = this.visualRoot;
-    head.position.y = 1.55;
-    head.scaling.set(1.04, 0.96, 0.99);
+    head.position.y = 1.54;
+    head.scaling.set(1.06, 0.95, 1.0);
     head.material = fur;
 
-    this.createSpherePart(scene, 'bear-ear-left', new Vector3(-0.45, 1.98, -0.01), new Vector3(0.43, 0.43, 0.34), fur);
-    this.createSpherePart(scene, 'bear-ear-right', new Vector3(0.45, 1.98, -0.01), new Vector3(0.43, 0.43, 0.34), fur);
-    this.createSpherePart(scene, 'bear-ear-inner-left', new Vector3(-0.45, 1.99, 0.12), new Vector3(0.22, 0.22, 0.09), muzzle);
-    this.createSpherePart(scene, 'bear-ear-inner-right', new Vector3(0.45, 1.99, 0.12), new Vector3(0.22, 0.22, 0.09), muzzle);
+    this.createSpherePart(scene, 'bear-ear-left', new Vector3(-0.50, 2.02, -0.01), new Vector3(0.47, 0.47, 0.37), fur);
+    this.createSpherePart(scene, 'bear-ear-right', new Vector3(0.50, 2.02, -0.01), new Vector3(0.47, 0.47, 0.37), fur);
+    this.createSpherePart(scene, 'bear-ear-inner-left', new Vector3(-0.50, 2.03, 0.13), new Vector3(0.24, 0.24, 0.09), furShade);
+    this.createSpherePart(scene, 'bear-ear-inner-right', new Vector3(0.50, 2.03, 0.13), new Vector3(0.24, 0.24, 0.09), furShade);
 
-    this.createSpherePart(scene, 'bear-hood', new Vector3(0, 1.36, -0.36), new Vector3(1.12, 0.76, 0.52), hoodie);
-    this.createSpherePart(scene, 'bear-hood-rim', new Vector3(0, 1.43, -0.28), new Vector3(0.94, 0.58, 0.36), hoodieLight);
+    this.createSpherePart(scene, 'bear-hood', new Vector3(0, 1.34, -0.39), new Vector3(1.18, 0.79, 0.54), hoodie);
+    this.createSpherePart(scene, 'bear-hood-rim', new Vector3(0, 1.42, -0.29), new Vector3(1.00, 0.60, 0.38), hoodieLight);
 
-    this.createSpherePart(scene, 'bear-snout', new Vector3(0, 1.46, 0.59), new Vector3(0.62, 0.43, 0.28), muzzle);
-    this.createSpherePart(scene, 'bear-eye-left', new Vector3(-0.22, 1.70, 0.61), new Vector3(0.105, 0.14, 0.065), face);
-    this.createSpherePart(scene, 'bear-eye-right', new Vector3(0.22, 1.70, 0.61), new Vector3(0.105, 0.14, 0.065), face);
-    this.createSpherePart(scene, 'bear-nose', new Vector3(0, 1.52, 0.79), new Vector3(0.17, 0.12, 0.09), face);
+    this.createSpherePart(scene, 'bear-snout', new Vector3(0, 1.45, 0.65), new Vector3(0.66, 0.45, 0.28), furShade);
+    this.createSpherePart(scene, 'bear-eye-left', new Vector3(-0.24, 1.72, 0.69), new Vector3(0.12, 0.15, 0.07), face);
+    this.createSpherePart(scene, 'bear-eye-right', new Vector3(0.24, 1.72, 0.69), new Vector3(0.12, 0.15, 0.07), face);
+    this.createSpherePart(scene, 'bear-nose', new Vector3(0, 1.53, 0.87), new Vector3(0.18, 0.13, 0.10), face);
+    this.createSpherePart(scene, 'bear-mouth-left', new Vector3(-0.055, 1.43, 0.88), new Vector3(0.055, 0.035, 0.035), face);
+    this.createSpherePart(scene, 'bear-mouth-right', new Vector3(0.055, 1.43, 0.88), new Vector3(0.055, 0.035, 0.035), face);
 
-    const leftArm = this.createLimb(scene, 'bear-arm-left', new Vector3(-0.56, 0.92, 0.02), hoodieLight, 0.28, 0.58, 0.28);
-    const rightArm = this.createLimb(scene, 'bear-arm-right', new Vector3(0.56, 0.92, 0.02), hoodieLight, 0.28, 0.58, 0.28);
-    leftArm.rotation.z = -0.12;
-    rightArm.rotation.z = 0.12;
+    const browLeft = this.createSpherePart(scene, 'bear-brow-left', new Vector3(-0.24, 1.86, 0.69), new Vector3(0.19, 0.045, 0.035), face);
+    const browRight = this.createSpherePart(scene, 'bear-brow-right', new Vector3(0.24, 1.86, 0.69), new Vector3(0.19, 0.045, 0.035), face);
+    browLeft.rotation.z = 0.16;
+    browRight.rotation.z = -0.16;
 
-    this.createSpherePart(scene, 'bear-hand-left', new Vector3(-0.61, 0.65, 0.08), new Vector3(0.34, 0.34, 0.34), fur);
-    this.createSpherePart(scene, 'bear-hand-right', new Vector3(0.61, 0.65, 0.08), new Vector3(0.34, 0.34, 0.34), fur);
+    const leftArm = this.createLimb(scene, 'bear-arm-left', new Vector3(-0.59, 0.90, 0.03), hoodieLight, 0.30, 0.54, 0.30);
+    const rightArm = this.createLimb(scene, 'bear-arm-right', new Vector3(0.59, 0.90, 0.03), hoodieLight, 0.30, 0.54, 0.30);
+    leftArm.rotation.z = -0.15;
+    rightArm.rotation.z = 0.15;
 
-    this.createLimb(scene, 'bear-leg-left', new Vector3(-0.26, 0.22, 0.02), fur, 0.32, 0.38, 0.36);
-    this.createLimb(scene, 'bear-leg-right', new Vector3(0.26, 0.22, 0.02), fur, 0.32, 0.38, 0.36);
-    this.createSpherePart(scene, 'bear-tail', new Vector3(0, 0.72, -0.54), new Vector3(0.30, 0.30, 0.25), fur);
+    this.createSpherePart(scene, 'bear-hand-left', new Vector3(-0.64, 0.65, 0.10), new Vector3(0.37, 0.37, 0.37), fur);
+    this.createSpherePart(scene, 'bear-hand-right', new Vector3(0.64, 0.65, 0.10), new Vector3(0.37, 0.37, 0.37), fur);
+
+    this.createLimb(scene, 'bear-leg-left', new Vector3(-0.26, 0.22, 0.03), fur, 0.34, 0.34, 0.38);
+    this.createLimb(scene, 'bear-leg-right', new Vector3(0.26, 0.22, 0.03), fur, 0.34, 0.34, 0.38);
+    this.createSpherePart(scene, 'bear-foot-left', new Vector3(-0.27, 0.10, 0.20), new Vector3(0.39, 0.22, 0.48), furShade);
+    this.createSpherePart(scene, 'bear-foot-right', new Vector3(0.27, 0.10, 0.20), new Vector3(0.39, 0.22, 0.48), furShade);
+    this.createSpherePart(scene, 'bear-tail', new Vector3(0, 0.72, -0.58), new Vector3(0.34, 0.34, 0.28), fur);
   }
 
   private createContactShadow(scene: Scene): void {
     const shadowMaterial = new StandardMaterial('bear-shadow-mat', scene);
-    shadowMaterial.diffuseColor = new Color3(0.035, 0.045, 0.06);
+    shadowMaterial.diffuseColor = new Color3(0.025, 0.035, 0.05);
     shadowMaterial.specularColor = Color3.Black();
-    shadowMaterial.alpha = 0.23;
+    shadowMaterial.alpha = 0.28;
     shadowMaterial.disableLighting = true;
 
     const shadow = CreateCylinder('bear-contact-shadow', {
       height: 0.012,
-      diameter: 1.28,
+      diameter: 1.48,
       tessellation: 24
     }, scene);
     shadow.parent = this.root;
     shadow.position.y = 0.005;
-    shadow.scaling.z = 0.72;
+    shadow.scaling.z = 0.70;
     shadow.material = shadowMaterial;
   }
 
