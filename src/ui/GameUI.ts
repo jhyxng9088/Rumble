@@ -1,5 +1,6 @@
 export class GameUI {
   readonly joystickElement: HTMLDivElement;
+  private readonly bootStatus: HTMLDivElement;
 
   constructor(root: HTMLElement) {
     root.replaceChildren();
@@ -17,6 +18,21 @@ export class GameUI {
     this.joystickElement.setAttribute('aria-label', '이동 조이스틱');
     this.joystickElement.innerHTML = '<div class="joystick-ring"></div><div class="joystick-knob"></div>';
 
-    root.append(brand, hint, this.joystickElement);
+    this.bootStatus = document.createElement('div');
+    this.bootStatus.className = 'boot-status';
+    this.bootStatus.textContent = '3D 초기화 중…';
+
+    root.append(brand, hint, this.joystickElement, this.bootStatus);
+  }
+
+  markReady(): void {
+    this.bootStatus.remove();
+  }
+
+  showFatal(error: unknown): void {
+    const message = error instanceof Error ? error.message : String(error);
+    this.bootStatus.className = 'boot-status boot-status--fatal';
+    this.bootStatus.textContent = `3D 초기화 실패\n${message}`;
+    this.joystickElement.hidden = true;
   }
 }
