@@ -1,13 +1,10 @@
-import {
-  Color3,
-  Color4,
-  DirectionalLight,
-  HemisphericLight,
-  MeshBuilder,
-  Scene,
-  StandardMaterial,
-  Vector3
-} from '@babylonjs/core';
+import { DirectionalLight } from '@babylonjs/core/Lights/directionalLight';
+import { HemisphericLight } from '@babylonjs/core/Lights/hemisphericLight';
+import { StandardMaterial } from '@babylonjs/core/Materials/standardMaterial';
+import { Color3, Color4 } from '@babylonjs/core/Maths/math.color';
+import { Vector3 } from '@babylonjs/core/Maths/math.vector';
+import { CreateBox } from '@babylonjs/core/Meshes/Builders/boxBuilder';
+import type { Scene } from '@babylonjs/core/scene';
 
 export class ArenaWorld {
   readonly spawnPoint = new Vector3(0, 0.02, -1.4);
@@ -37,7 +34,7 @@ export class ArenaWorld {
     const accentMaterial = this.material('accent-mat', new Color3(0.74, 0.33, 0.20));
     const metalMaterial = this.material('metal-mat', new Color3(0.25, 0.31, 0.35));
 
-    const floor = MeshBuilder.CreateBox('arena-floor', { width: 18, depth: 14, height: 0.45 }, this.scene);
+    const floor = CreateBox('arena-floor', { width: 18, depth: 14, height: 0.45 }, this.scene);
     floor.position.y = -0.24;
     floor.material = floorMaterial;
     floor.checkCollisions = true;
@@ -52,7 +49,7 @@ export class ArenaWorld {
     this.createObstacle('low-vent', new Vector3(2.1, 0.38, -3.2), new Vector3(2.5, 0.76, 1.15), metalMaterial);
 
     for (let i = 0; i < 5; i += 1) {
-      const stripe = MeshBuilder.CreateBox(`roof-stripe-${i}`, { width: 0.18, height: 0.012, depth: 2.5 }, this.scene);
+      const stripe = CreateBox(`roof-stripe-${i}`, { width: 0.18, height: 0.012, depth: 2.5 }, this.scene);
       stripe.position.set(-6.3 + i * 0.42, 0.015, -4.3);
       stripe.rotation.y = -0.55;
       stripe.material = accentMaterial;
@@ -60,7 +57,7 @@ export class ArenaWorld {
   }
 
   private createWall(name: string, position: Vector3, size: Vector3, material: StandardMaterial): void {
-    const wall = MeshBuilder.CreateBox(name, {
+    const wall = CreateBox(name, {
       width: size.x,
       height: size.y,
       depth: size.z
@@ -71,7 +68,7 @@ export class ArenaWorld {
   }
 
   private createObstacle(name: string, position: Vector3, size: Vector3, material: StandardMaterial): void {
-    const obstacle = MeshBuilder.CreateBox(name, {
+    const obstacle = CreateBox(name, {
       width: size.x,
       height: size.y,
       depth: size.z
