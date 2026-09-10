@@ -9,10 +9,10 @@ export class InputController {
   private readonly pressedKeys = new Set<string>();
 
   constructor(private readonly joystick: HTMLElement) {
-    joystick.addEventListener('pointerdown', this.handlePointerDown);
-    joystick.addEventListener('pointermove', this.handlePointerMove);
-    joystick.addEventListener('pointerup', this.handlePointerEnd);
-    joystick.addEventListener('pointercancel', this.handlePointerEnd);
+    joystick.addEventListener('pointerdown', this.handlePointerDown, { passive: false });
+    window.addEventListener('pointermove', this.handlePointerMove, { passive: false });
+    window.addEventListener('pointerup', this.handlePointerEnd, { passive: false });
+    window.addEventListener('pointercancel', this.handlePointerEnd, { passive: false });
     window.addEventListener('keydown', this.handleKeyDown);
     window.addEventListener('keyup', this.handleKeyUp);
   }
@@ -35,6 +35,7 @@ export class InputController {
   }
 
   reset(): void {
+    this.releasePointerCapture();
     this.activePointerId = null;
     this.pressedKeys.clear();
     this.movementVector.set(0, 0);
@@ -44,24 +45,35 @@ export class InputController {
   private readonly handlePointerDown = (event: PointerEvent): void => {
     if (this.activePointerId !== null) return;
 
+    event.preventDefault();
     this.activePointerId = event.pointerId;
-    this.joystick.setPointerCapture(event.pointerId);
 
     const rect = this.joystick.getBoundingClientRect();
     this.centerX = rect.left + rect.width / 2;
     this.centerY = rect.top + rect.height / 2;
-    this.maxRadius = rect.width * 0.31;
+    this.maxRadius = Math.max(rect.width * 0.31, 1);
+
+    // Update first so movement still works even if Safari rejects pointer capture.
     this.updateFromPointer(event.clientX, event.clientY);
+
+    try {
+      this.joystick.setPointerCapture(event.pointerId);
+    } catch {
+      // Window-level pointer tracking below is the canonical fallback.
+    }
   };
 
   private readonly handlePointerMove = (event: PointerEvent): void => {
     if (event.pointerId !== this.activePointerId) return;
+    event.preventDefault();
     this.updateFromPointer(event.clientX, event.clientY);
   };
 
   private readonly handlePointerEnd = (event: PointerEvent): void => {
     if (event.pointerId !== this.activePointerId) return;
 
+    event.preventDefault();
+    this.releasePointerCapture();
     this.activePointerId = null;
     this.movementVector.set(0, 0);
     this.updateKnob(0, 0);
@@ -86,7 +98,7 @@ export class InputController {
     let dy = clientY - this.centerY;
     const distance = Math.hypot(dx, dy);
 
-    if (distance > this.maxRadius) {
+    if (distance > this.maxRadius && distance > 0) {
       const scale = this.maxRadius / distance;
       dx *= scale;
       dy *= scale;
@@ -114,6 +126,18 @@ export class InputController {
   private updateKnob(x: number, y: number): void {
     this.joystick.style.setProperty('--stick-x', `${x}px`);
     this.joystick.style.setProperty('--stick-y', `${y}px`);
+  }
+
+  private releasePointerCapture(): void {
+    if (this.activePointerId === null) return;
+
+    try {
+      if (this.joystick.hasPointerCapture(this.activePointerId)) {
+        this.joystick.releasePointerCapture(this.activePointerId);
+      }
+    } catch {
+      // Capture is optional because active input is tracked on window.
+    }
   }
 
   private isMovementKey(code: string): boolean {

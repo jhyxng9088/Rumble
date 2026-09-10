@@ -12,21 +12,20 @@ const TURN_SPEED = 15;
 
 export class PlayerCharacter {
   readonly root: Mesh;
+  readonly collisionRadius = 0.42;
   private readonly visualRoot: TransformNode;
+  private readonly movementDelta = Vector3.Zero();
   private walkTime = 0;
   private currentSpeed = 0;
 
   constructor(scene: Scene, spawnPoint: Vector3) {
     this.root = CreateCapsule('player-collider', {
       height: 1.65,
-      radius: 0.42,
+      radius: this.collisionRadius,
       tessellation: 8
     }, scene);
     this.root.position.copyFrom(spawnPoint);
     this.root.isVisible = false;
-    this.root.checkCollisions = true;
-    this.root.ellipsoid = new Vector3(0.42, 0.82, 0.42);
-    this.root.ellipsoidOffset = new Vector3(0, 0.82, 0);
 
     this.visualRoot = new TransformNode('player-visual', scene);
     this.visualRoot.parent = this.root;
@@ -40,7 +39,8 @@ export class PlayerCharacter {
 
     if (worldDirection.lengthSquared() > 0.0001) {
       const normalized = worldDirection.normalizeToNew();
-      this.root.moveWithCollisions(normalized.scale(this.currentSpeed * deltaSeconds));
+      this.movementDelta.copyFrom(normalized).scaleInPlace(this.currentSpeed * deltaSeconds);
+      this.root.position.addInPlace(this.movementDelta);
       this.faceDirection(normalized, deltaSeconds);
     }
 
