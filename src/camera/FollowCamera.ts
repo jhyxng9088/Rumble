@@ -1,4 +1,6 @@
-import { FreeCamera, Scene, Vector3 } from '@babylonjs/core';
+import { FreeCamera } from '@babylonjs/core/Cameras/freeCamera';
+import { Vector3 } from '@babylonjs/core/Maths/math.vector';
+import type { Scene } from '@babylonjs/core/scene';
 
 const CAMERA_OFFSET = new Vector3(0, 10.5, -10.8);
 const LOOK_AHEAD = new Vector3(0, 0.65, 1.1);
