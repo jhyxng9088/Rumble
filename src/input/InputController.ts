@@ -1,4 +1,4 @@
-import { Vector2 } from '@babylonjs/core';
+import { Vector2 } from '@babylonjs/core/Maths/math.vector';
 
 export class InputController {
   private readonly movementVector = Vector2.Zero();
