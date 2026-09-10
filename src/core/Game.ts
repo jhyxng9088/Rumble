@@ -3,7 +3,6 @@ import { Scene } from '@babylonjs/core/scene';
 import { FollowCamera } from '../camera/FollowCamera';
 import { PlayerCharacter } from '../character/PlayerCharacter';
 import { InputController } from '../input/InputController';
-import { GameUI } from '../ui/GameUI';
 import { ArenaWorld } from '../world/ArenaWorld';
 
 export class Game {
@@ -13,22 +12,20 @@ export class Game {
   private readonly camera: FollowCamera;
   private readonly input: InputController;
 
-  constructor(canvas: HTMLCanvasElement, hudRoot: HTMLElement) {
-    this.engine = new Engine(canvas, false, {
-      preserveDrawingBuffer: false,
-      stencil: false,
-      antialias: false,
-      powerPreference: 'high-performance'
-    });
-
+  constructor(
+    canvas: HTMLCanvasElement,
+    joystickElement: HTMLElement
+  ) {
+    // Keep WebGL context creation conservative for Safari/WKWebView.
+    // Babylon's defaults already provide the normal WebGL2 -> WebGL1 fallback path.
+    this.engine = new Engine(canvas, false);
     this.applyResolutionCap();
 
     this.scene = new Scene(this.engine);
     const world = new ArenaWorld(this.scene);
     this.player = new PlayerCharacter(this.scene, world.spawnPoint);
     this.camera = new FollowCamera(this.scene, this.player.root.position);
-    const ui = new GameUI(hudRoot);
-    this.input = new InputController(ui.joystickElement);
+    this.input = new InputController(joystickElement);
 
     window.addEventListener('resize', this.handleResize, { passive: true });
     document.addEventListener('visibilitychange', this.handleVisibilityChange);
