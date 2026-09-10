@@ -1,4 +1,5 @@
-import { Engine, Scene } from '@babylonjs/core';
+import { Engine } from '@babylonjs/core/Engines/engine';
+import { Scene } from '@babylonjs/core/scene';
 import { FollowCamera } from '../camera/FollowCamera';
 import { PlayerCharacter } from '../character/PlayerCharacter';
 import { InputController } from '../input/InputController';
