@@ -48,8 +48,15 @@ export class FollowCamera {
   }
 
   private updateBasis(): void {
-    const forward = this.camera.getForwardRay().direction;
-    this.forwardOnGround.set(forward.x, 0, forward.z).normalize();
+    this.lookTarget.subtractToRef(this.camera.position, this.forwardOnGround);
+    this.forwardOnGround.y = 0;
+
+    if (this.forwardOnGround.lengthSquared() < 0.000001) {
+      this.forwardOnGround.set(0, 0, 1);
+    } else {
+      this.forwardOnGround.normalize();
+    }
+
     Vector3.CrossToRef(Vector3.Up(), this.forwardOnGround, this.rightOnGround);
     this.rightOnGround.normalize();
   }
