@@ -1,0 +1,23 @@
+{
+  "name": "rumble",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 0.0.0.0",
+    "build": "tsc --noEmit && vite build",
+    "test": "vitest run",
+    "check": "tsc --noEmit && vitest run"
+  },
+  "dependencies": {
+    "@babylonjs/core": "9.25.0"
+  },
+  "devDependencies": {
+    "typescript": "7.0.2",
+    "vite": "8.2.2",
+    "vitest": "5.0.0"
+  },
+  "engines": {
+    "node": ">=24"
+  }
+}

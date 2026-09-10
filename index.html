@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+    <meta name="theme-color" content="#111827" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="format-detection" content="telephone=no" />
+    <link rel="manifest" href="./manifest.webmanifest" />
+    <link rel="icon" href="./icon.svg" type="image/svg+xml" />
+    <title>RUMBLE</title>
+  </head>
+  <body>
+    <div id="app">
+      <canvas id="game-canvas" aria-label="RUMBLE 3D arena"></canvas>
+      <div class="hud" aria-hidden="true">
+        <div class="brand">RUMBLE <span>STAGE 1</span></div>
+        <div class="move-hint">왼쪽 스틱으로 이동</div>
+      </div>
+      <div class="controls">
+        <div id="move-stick" class="move-stick" role="application" aria-label="이동 조이스틱">
+          <div class="move-stick__ring"></div>
+          <div id="move-stick-knob" class="move-stick__knob"></div>
+        </div>
+      </div>
+    </div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
