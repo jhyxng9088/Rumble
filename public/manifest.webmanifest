@@ -1,0 +1,11 @@
+{
+  "name": "RUMBLE",
+  "short_name": "RUMBLE",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "landscape",
+  "background_color": "#17131f",
+  "theme_color": "#17131f",
+  "description": "A tiny 3D arena action prototype."
+}
