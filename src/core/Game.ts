@@ -16,10 +16,9 @@ export class Game {
     canvas: HTMLCanvasElement,
     hudRoot: HTMLElement
   ) {
-    this.engine = new Engine(canvas, false, {
+    this.engine = new Engine(canvas, true, {
       preserveDrawingBuffer: false,
       stencil: false,
-      antialias: false,
       powerPreference: 'high-performance'
     });
 
@@ -38,7 +37,7 @@ export class Game {
 
   start(): void {
     this.engine.runRenderLoop(() => {
-      const deltaSeconds = Math.min(this.engine.getDeltaTime() / 1000, 1 / 30);
+      const deltaSeconds = Math.min(this.engine.getDeltaTime() / 1000, 0.05);
       const inputVector = this.input.movement;
       const worldDirection = this.camera.toWorldDirection(inputVector.x, inputVector.y);
 
