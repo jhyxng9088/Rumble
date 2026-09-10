@@ -1,12 +1,11 @@
-import {
-  Color3,
-  Mesh,
-  MeshBuilder,
-  Scene,
-  StandardMaterial,
-  TransformNode,
-  Vector3
-} from '@babylonjs/core';
+import { Color3 } from '@babylonjs/core/Maths/math.color';
+import { Vector3 } from '@babylonjs/core/Maths/math.vector';
+import { StandardMaterial } from '@babylonjs/core/Materials/standardMaterial';
+import { CreateCapsule } from '@babylonjs/core/Meshes/Builders/capsuleBuilder';
+import { CreateSphere } from '@babylonjs/core/Meshes/Builders/sphereBuilder';
+import type { Mesh } from '@babylonjs/core/Meshes/mesh';
+import { TransformNode } from '@babylonjs/core/Meshes/transformNode';
+import type { Scene } from '@babylonjs/core/scene';
 
 const MOVE_SPEED = 4.8;
 const TURN_SPEED = 15;
@@ -18,7 +17,7 @@ export class PlayerCharacter {
   private currentSpeed = 0;
 
   constructor(scene: Scene, spawnPoint: Vector3) {
-    this.root = MeshBuilder.CreateCapsule('player-collider', {
+    this.root = CreateCapsule('player-collider', {
       height: 1.65,
       radius: 0.42,
       tessellation: 8
@@ -74,7 +73,7 @@ export class PlayerCharacter {
     const darkMaterial = this.material(scene, 'player-dark-mat', new Color3(0.08, 0.07, 0.11));
     const shoeMaterial = this.material(scene, 'player-shoe-mat', new Color3(0.12, 0.14, 0.19));
 
-    const body = MeshBuilder.CreateCapsule('player-body', {
+    const body = CreateCapsule('player-body', {
       height: 1.0,
       radius: 0.43,
       tessellation: 12
@@ -84,13 +83,13 @@ export class PlayerCharacter {
     body.scaling.x = 1.06;
     body.material = bodyMaterial;
 
-    const head = MeshBuilder.CreateSphere('player-head', { diameter: 1.02, segments: 16 }, scene);
+    const head = CreateSphere('player-head', { diameter: 1.02, segments: 16 }, scene);
     head.parent = this.visualRoot;
     head.position.y = 1.72;
     head.scaling.set(1.03, 0.98, 1.0);
     head.material = skinMaterial;
 
-    const hair = MeshBuilder.CreateSphere('player-hair', { diameter: 1.04, segments: 12 }, scene);
+    const hair = CreateSphere('player-hair', { diameter: 1.04, segments: 12 }, scene);
     hair.parent = this.visualRoot;
     hair.position.set(0, 1.88, -0.045);
     hair.scaling.set(1.02, 0.55, 0.96);
@@ -108,7 +107,7 @@ export class PlayerCharacter {
   }
 
   private createEye(scene: Scene, x: number, material: StandardMaterial): void {
-    const eye = MeshBuilder.CreateSphere('player-eye', { diameter: 0.095, segments: 8 }, scene);
+    const eye = CreateSphere('player-eye', { diameter: 0.095, segments: 8 }, scene);
     eye.parent = this.visualRoot;
     eye.position.set(x, 1.77, 0.48);
     eye.scaling.z = 0.45;
@@ -125,7 +124,7 @@ export class PlayerCharacter {
     depth: number
   ): void {
     const radius = Math.min(width, depth) / 2;
-    const limb = MeshBuilder.CreateCapsule(name, {
+    const limb = CreateCapsule(name, {
       height: Math.max(height, radius * 2),
       radius,
       tessellation: 8
