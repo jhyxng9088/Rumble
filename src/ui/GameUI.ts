@@ -6,17 +6,17 @@ export class GameUI {
     root.replaceChildren();
 
     const brand = document.createElement('div');
-    brand.className = 'brand-chip';
-    brand.innerHTML = '<strong>RUMBLE</strong><span>STAGE 1</span>';
+    brand.className = 'brand-lockup';
+    brand.innerHTML = '<strong>RUMBLE</strong><span>SMALL FIGHTS, BIG FUN</span>';
 
     const hint = document.createElement('div');
     hint.className = 'move-hint';
-    hint.textContent = '왼쪽 스틱으로 이동';
+    hint.textContent = 'MOVE';
 
     this.joystickElement = document.createElement('div');
     this.joystickElement.className = 'joystick';
     this.joystickElement.setAttribute('aria-label', '이동 조이스틱');
-    this.joystickElement.innerHTML = '<div class="joystick-ring"></div><div class="joystick-knob"></div>';
+    this.joystickElement.innerHTML = '<div class="joystick-ring"><i class="stick-tick stick-tick--up"></i><i class="stick-tick stick-tick--right"></i><i class="stick-tick stick-tick--down"></i><i class="stick-tick stick-tick--left"></i></div><div class="joystick-knob"></div>';
 
     this.bootStatus = document.createElement('div');
     this.bootStatus.className = 'boot-status';
