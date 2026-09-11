@@ -5,7 +5,7 @@
   "scope": "./",
   "display": "standalone",
   "orientation": "landscape",
-  "background_color": "#08090f",
-  "theme_color": "#08090f",
-  "description": "A fast mobile-first 2.5D brawler prototype."
+  "background_color": "#17131f",
+  "theme_color": "#17131f",
+  "description": "A fast mobile-first stylized 3D brawler prototype."
 }

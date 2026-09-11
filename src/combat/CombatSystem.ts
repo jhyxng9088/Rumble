@@ -1,57 +1,52 @@
-import { Fighter } from '../character/Fighter';
-import type { AttackKind, Vec2 } from '../core/types';
-import { Effects } from '../effects/Effects';
-import { ArenaCamera } from '../camera/ArenaCamera';
+import { Vector3 } from '@babylonjs/core/Maths/math.vector';
+import { StylizedFighter } from '../character/StylizedFighter';
+import { ImpactEffects } from '../effects/ImpactEffects';
+import { FollowCamera } from '../camera/FollowCamera';
 
 interface AttackSpec {
   reach: number;
-  depth: number;
   damage: number;
   knockback: number;
   hitStun: number;
-  stopMs: number;
+  hitStop: number;
 }
 
-const ATTACKS: Record<AttackKind, AttackSpec> = {
-  light: { reach: 1.65, depth: 0.95, damage: 9, knockback: 4.6, hitStun: 0.16, stopMs: 54 },
-  heavy: { reach: 2.0, depth: 1.05, damage: 18, knockback: 7.8, hitStun: 0.26, stopMs: 82 },
-};
+const ATTACKS = {
+  light: { reach: 1.65, damage: 9, knockback: 5.1, hitStun: 0.16, hitStop: 0.055 },
+  heavy: { reach: 1.95, damage: 18, knockback: 8.4, hitStun: 0.27, hitStop: 0.085 },
+} satisfies Record<'light' | 'heavy', AttackSpec>;
 
 export class CombatSystem {
-  private readonly resolvedAttack = new Map<string, number>();
+  private readonly resolved = new Map<string, number>();
   private hitStopRemaining = 0;
 
-  constructor(
-    private readonly effects: Effects,
-    private readonly camera: ArenaCamera,
-  ) {}
+  constructor(private readonly effects: ImpactEffects, private readonly camera: FollowCamera) {}
 
-  update(attacker: Fighter, defender: Fighter): void {
+  resolve(attacker: StylizedFighter, defender: StylizedFighter): void {
     if (!attacker.attackKind || !attacker.isAttackActive()) return;
     const key = `${attacker.id}:${defender.id}`;
-    if (this.resolvedAttack.get(key) === attacker.attackSerial) return;
-    this.resolvedAttack.set(key, attacker.attackSerial);
+    if (this.resolved.get(key) === attacker.attackSerial) return;
+    this.resolved.set(key, attacker.attackSerial);
 
     const spec = ATTACKS[attacker.attackKind];
-    const dx = defender.position.x - attacker.position.x;
-    const dy = defender.position.y - attacker.position.y;
-    const inFront = Math.sign(dx || attacker.facing) === attacker.facing;
-    if (!inFront || Math.abs(dx) > spec.reach || Math.abs(dy) > spec.depth) return;
+    const delta = defender.position.subtract(attacker.position);
+    delta.y = 0;
+    const distance = delta.length();
+    if (distance > spec.reach || distance < 0.001) return;
+    const direction = delta.normalizeToNew();
+    if (Vector3.Dot(attacker.forward, direction) < 0.12) return;
 
-    const direction = Math.sign(dx || attacker.facing) || attacker.facing;
-    const knockback: Vec2 = {
-      x: direction * spec.knockback,
-      y: Math.sign(dy || 1) * spec.knockback * 0.12,
-    };
+    const knockback = direction.scale(spec.knockback);
+    knockback.y = attacker.attackKind === 'heavy' ? 1.35 : 0.55;
     if (!defender.receiveHit(spec.damage, knockback, spec.hitStun)) {
-      this.effects.spawnDodgeSpark(defender.position);
+      this.effects.spawnEvade(defender.position.add(new Vector3(0, 1.15, 0)));
       return;
     }
 
-    attacker.rage = Math.min(100, attacker.rage + spec.damage * 0.9);
-    this.hitStopRemaining = Math.max(this.hitStopRemaining, spec.stopMs / 1000);
-    this.effects.spawnImpact(defender.position, attacker.attackKind, direction);
-    this.camera.kick(attacker.attackKind === 'heavy' ? 1.0 : 0.55, attacker.attackKind === 'heavy' ? 0.15 : 0.10);
+    attacker.rage = Math.min(100, attacker.rage + spec.damage * 0.95);
+    this.hitStopRemaining = Math.max(this.hitStopRemaining, spec.hitStop);
+    this.effects.spawnHit(defender.position.add(new Vector3(0, 1.15, 0)), attacker.attackKind, direction);
+    this.camera.kick(attacker.attackKind === 'heavy' ? 1 : 0.55);
   }
 
   consumeHitStop(deltaSeconds: number): boolean {

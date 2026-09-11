@@ -1,25 +1,16 @@
 # RUMBLE
 
-Mobile-first 2.5D brawler prototype rebuilt from the original 3D Stage 1.
+Mobile-first stylized 3D brawler prototype.
 
 ## Current prototype
 
-- perspective arena rendered on Canvas 2D
-- player vs lightweight rival AI
-- free lane movement
-- light and heavy attacks
-- dodge invulnerability
-- hit-stop, knockback, impact particles, camera shake and zoom punch
-- mobile joystick + direct action-button ownership
+- Babylon.js 3D rooftop arena
+- two stylized humanoid fighters
+- mobile joystick movement
+- light / heavy / dodge combat
+- guard stance, punch anticipation/follow-through, hurt/KO poses
+- hit-stop, knockback, impact bursts, camera shake and FOV punch
+- lightweight rival AI
+- health + rage HUD
 
-## Development
-
-```bash
-npm install
-npm test
-npm run typecheck
-npm run build
-npm run dev
-```
-
-Runtime ownership is split into `input`, `combat`, `character`, `camera`, `world`, `effects`, and `ui`. `core/Game.ts` only coordinates the frame loop and those owners.
+The temporary 2.5D version remains preserved in git history as a rollback point. The current direction is 3D again, but the old primitive-bear character direction is retired.

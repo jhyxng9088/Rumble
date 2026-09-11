@@ -6,7 +6,6 @@ const forbiddenFileName = /(?:^|[-_.])patch\.(?:js|ts|tsx|jsx)$/i;
 const forbiddenSourcePatterns = [
   ['MutationObserver', /\bMutationObserver\b/],
   ['synthetic DOM click', /\.click\s*\(/],
-  ['Babylon legacy runtime', /@babylonjs\/core/],
 ];
 
 async function walk(directory) {
@@ -22,17 +21,23 @@ async function walk(directory) {
 
 const files = await walk(sourceRoot);
 const violations = [];
+
 for (const file of files) {
   const path = relative(sourceRoot, file);
-  if (forbiddenFileName.test(path)) violations.push(`${path}: patch-style file names are not allowed`);
+  if (forbiddenFileName.test(path)) {
+    violations.push(`${path}: patch-style file names are not allowed`);
+  }
+
   if (!['.ts', '.tsx', '.js', '.jsx'].includes(extname(file))) continue;
   const source = await readFile(file, 'utf8');
   for (const [label, pattern] of forbiddenSourcePatterns) {
     if (pattern.test(source)) violations.push(`${path}: ${label} is not allowed`);
   }
 }
+
 if (violations.length) {
   console.error('Architecture guard failed:\n' + violations.map((item) => `- ${item}`).join('\n'));
   process.exit(1);
 }
+
 console.log(`Architecture guard passed (${files.length} source files checked).`);
