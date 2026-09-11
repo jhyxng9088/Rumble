@@ -1,14 +1,14 @@
-# RUMBLE canonical ownership
+# Architecture
 
-RUMBLE starts with single ownership so later stages do not need a cleanup/unification pass.
+RUMBLE uses one canonical owner per gameplay responsibility.
 
-- `core/Game.ts`: frame coordination only
-- `input/`: raw pointer/keyboard input and normalized intent
-- `character/`: player movement and character presentation
-- `camera/`: follow camera and screen-to-world movement basis
-- `world/`: arena geometry, lighting, and static collision
-- `ui/`: DOM HUD construction only
+- `input/InputController.ts`: keyboard, joystick, and action button input only
+- `character/Fighter.ts`: fighter state, movement, dodge, damage state
+- `combat/CombatSystem.ts`: attack data, hit validation, hit-stop handoff
+- `camera/ArenaCamera.ts`: impact shake and zoom punch
+- `world/ArenaWorld.ts`: canvas sizing, arena bounds, perspective projection and arena drawing
+- `effects/Effects.ts`: pooled short-lived impact visuals
+- `ui/GameUI.ts`: DOM HUD and control construction/update
+- `core/Game.ts`: frame coordination and prototype rival decision loop
 
-`combat/` and `effects/` are added only when their stages begin. They must not be pre-implemented through UI, DOM, or character-side workarounds.
-
-Forbidden patterns: patch-layer files, fake/synthetic DOM clicks, MutationObserver ownership, duplicate listeners for the same input responsibility, and parallel owners for one game state.
+Forbidden patterns are enforced by `scripts/architecture-check.mjs`: patch-style runtime files, MutationObserver ownership, synthetic DOM clicks, and Babylon legacy imports.

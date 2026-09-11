@@ -1,153 +1,126 @@
-import { Vector2 } from '@babylonjs/core/Maths/math.vector';
+import type { InputFrame, Vec2 } from '../core/types';
+
+const ZERO: Vec2 = { x: 0, y: 0 };
 
 export class InputController {
-  private readonly movementVector = Vector2.Zero();
+  private readonly keys = new Set<string>();
+  private move: Vec2 = { ...ZERO };
+  private lightQueued = false;
+  private heavyQueued = false;
+  private dodgeQueued = false;
   private activePointerId: number | null = null;
-  private centerX = 0;
-  private centerY = 0;
-  private maxRadius = 1;
-  private readonly pressedKeys = new Set<string>();
+  private joystickOrigin: Vec2 = { ...ZERO };
 
-  constructor(private readonly joystick: HTMLElement) {
-    joystick.addEventListener('pointerdown', this.handlePointerDown, { passive: false });
-    window.addEventListener('pointermove', this.handlePointerMove, { passive: false });
-    window.addEventListener('pointerup', this.handlePointerEnd, { passive: false });
-    window.addEventListener('pointercancel', this.handlePointerEnd, { passive: false });
-    window.addEventListener('keydown', this.handleKeyDown);
-    window.addEventListener('keyup', this.handleKeyUp);
+  constructor(private readonly root: HTMLElement) {
+    window.addEventListener('keydown', this.onKeyDown, { passive: false });
+    window.addEventListener('keyup', this.onKeyUp, { passive: false });
+    this.bindControls();
   }
 
-  get movement(): Vector2 {
-    if (this.activePointerId !== null) {
-      return this.movementVector;
-    }
-
-    const x = Number(this.pressedKeys.has('KeyD') || this.pressedKeys.has('ArrowRight'))
-      - Number(this.pressedKeys.has('KeyA') || this.pressedKeys.has('ArrowLeft'));
-    const y = Number(this.pressedKeys.has('KeyW') || this.pressedKeys.has('ArrowUp'))
-      - Number(this.pressedKeys.has('KeyS') || this.pressedKeys.has('ArrowDown'));
-
-    this.movementVector.set(x, y);
-    if (this.movementVector.lengthSquared() > 1) {
-      this.movementVector.normalize();
-    }
-    return this.movementVector;
+  readFrame(): InputFrame {
+    const keyboard = this.keyboardMove();
+    const move = Math.hypot(keyboard.x, keyboard.y) > 0 ? keyboard : this.move;
+    const frame: InputFrame = {
+      move,
+      lightPressed: this.lightQueued,
+      heavyPressed: this.heavyQueued,
+      dodgePressed: this.dodgeQueued,
+    };
+    this.lightQueued = false;
+    this.heavyQueued = false;
+    this.dodgeQueued = false;
+    return frame;
   }
 
-  reset(): void {
-    this.releasePointerCapture();
-    this.activePointerId = null;
-    this.pressedKeys.clear();
-    this.movementVector.set(0, 0);
-    this.updateKnob(0, 0);
+  destroy(): void {
+    window.removeEventListener('keydown', this.onKeyDown);
+    window.removeEventListener('keyup', this.onKeyUp);
   }
 
-  private readonly handlePointerDown = (event: PointerEvent): void => {
-    if (this.activePointerId !== null) return;
+  private bindControls(): void {
+    const zone = this.required<HTMLElement>('[data-control="move-zone"]');
+    const knob = this.required<HTMLElement>('[data-control="move-knob"]');
 
-    event.preventDefault();
-    this.activePointerId = event.pointerId;
+    zone.addEventListener('pointerdown', (event) => {
+      if (this.activePointerId !== null) return;
+      this.activePointerId = event.pointerId;
+      zone.setPointerCapture(event.pointerId);
+      const rect = zone.getBoundingClientRect();
+      this.joystickOrigin = { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
+      this.updateJoystick(event.clientX, event.clientY, knob);
+    });
 
-    const rect = this.joystick.getBoundingClientRect();
-    this.centerX = rect.left + rect.width / 2;
-    this.centerY = rect.top + rect.height / 2;
-    this.maxRadius = Math.max(rect.width * 0.31, 1);
+    zone.addEventListener('pointermove', (event) => {
+      if (event.pointerId !== this.activePointerId) return;
+      this.updateJoystick(event.clientX, event.clientY, knob);
+    });
 
-    // Update first so movement still works even if Safari rejects pointer capture.
-    this.updateFromPointer(event.clientX, event.clientY);
+    const release = (event: PointerEvent) => {
+      if (event.pointerId !== this.activePointerId) return;
+      this.activePointerId = null;
+      this.move = { ...ZERO };
+      knob.style.transform = 'translate3d(0, 0, 0)';
+    };
+    zone.addEventListener('pointerup', release);
+    zone.addEventListener('pointercancel', release);
 
-    try {
-      this.joystick.setPointerCapture(event.pointerId);
-    } catch {
-      // Window-level pointer tracking below is the canonical fallback.
-    }
-  };
+    this.bindAction('light', () => { this.lightQueued = true; });
+    this.bindAction('heavy', () => { this.heavyQueued = true; });
+    this.bindAction('dodge', () => { this.dodgeQueued = true; });
+  }
 
-  private readonly handlePointerMove = (event: PointerEvent): void => {
-    if (event.pointerId !== this.activePointerId) return;
-    event.preventDefault();
-    this.updateFromPointer(event.clientX, event.clientY);
-  };
-
-  private readonly handlePointerEnd = (event: PointerEvent): void => {
-    if (event.pointerId !== this.activePointerId) return;
-
-    event.preventDefault();
-    this.releasePointerCapture();
-    this.activePointerId = null;
-    this.movementVector.set(0, 0);
-    this.updateKnob(0, 0);
-  };
-
-  private readonly handleKeyDown = (event: KeyboardEvent): void => {
-    if (this.isMovementKey(event.code)) {
-      this.pressedKeys.add(event.code);
+  private bindAction(name: string, action: () => void): void {
+    const button = this.required<HTMLButtonElement>(`[data-action="${name}"]`);
+    button.addEventListener('pointerdown', (event) => {
       event.preventDefault();
-    }
-  };
+      action();
+      button.dataset.pressed = 'true';
+    });
+    const release = () => { button.dataset.pressed = 'false'; };
+    button.addEventListener('pointerup', release);
+    button.addEventListener('pointercancel', release);
+    button.addEventListener('pointerleave', release);
+  }
 
-  private readonly handleKeyUp = (event: KeyboardEvent): void => {
-    if (this.isMovementKey(event.code)) {
-      this.pressedKeys.delete(event.code);
-      event.preventDefault();
-    }
-  };
-
-  private updateFromPointer(clientX: number, clientY: number): void {
-    let dx = clientX - this.centerX;
-    let dy = clientY - this.centerY;
+  private updateJoystick(clientX: number, clientY: number, knob: HTMLElement): void {
+    const dx = clientX - this.joystickOrigin.x;
+    const dy = clientY - this.joystickOrigin.y;
+    const radius = 42;
     const distance = Math.hypot(dx, dy);
-
-    if (distance > this.maxRadius && distance > 0) {
-      const scale = this.maxRadius / distance;
-      dx *= scale;
-      dy *= scale;
-    }
-
-    const normalizedX = dx / this.maxRadius;
-    const normalizedY = -dy / this.maxRadius;
-    const deadZone = 0.08;
-    const magnitude = Math.hypot(normalizedX, normalizedY);
-
-    if (magnitude <= deadZone) {
-      this.movementVector.set(0, 0);
-    } else {
-      const remappedMagnitude = Math.min((magnitude - deadZone) / (1 - deadZone), 1);
-      const inverse = 1 / magnitude;
-      this.movementVector.set(
-        normalizedX * inverse * remappedMagnitude,
-        normalizedY * inverse * remappedMagnitude
-      );
-    }
-
-    this.updateKnob(dx, dy);
+    const scale = distance > radius ? radius / distance : 1;
+    const x = dx * scale;
+    const y = dy * scale;
+    this.move = { x: x / radius, y: y / radius };
+    knob.style.transform = `translate3d(${x}px, ${y}px, 0)`;
   }
 
-  private updateKnob(x: number, y: number): void {
-    this.joystick.style.setProperty('--stick-x', `${x}px`);
-    this.joystick.style.setProperty('--stick-y', `${y}px`);
+  private keyboardMove(): Vec2 {
+    const x = (this.keys.has('KeyD') || this.keys.has('ArrowRight') ? 1 : 0)
+      - (this.keys.has('KeyA') || this.keys.has('ArrowLeft') ? 1 : 0);
+    const y = (this.keys.has('KeyS') || this.keys.has('ArrowDown') ? 1 : 0)
+      - (this.keys.has('KeyW') || this.keys.has('ArrowUp') ? 1 : 0);
+    const length = Math.hypot(x, y) || 1;
+    return { x: x / length, y: y / length };
   }
 
-  private releasePointerCapture(): void {
-    if (this.activePointerId === null) return;
-
-    try {
-      if (this.joystick.hasPointerCapture(this.activePointerId)) {
-        this.joystick.releasePointerCapture(this.activePointerId);
-      }
-    } catch {
-      // Capture is optional because active input is tracked on window.
+  private onKeyDown = (event: KeyboardEvent): void => {
+    this.keys.add(event.code);
+    if (event.repeat) return;
+    if (event.code === 'KeyJ') this.lightQueued = true;
+    if (event.code === 'KeyK') this.heavyQueued = true;
+    if (event.code === 'Space' || event.code === 'KeyL') {
+      event.preventDefault();
+      this.dodgeQueued = true;
     }
-  }
+  };
 
-  private isMovementKey(code: string): boolean {
-    return code === 'KeyW'
-      || code === 'KeyA'
-      || code === 'KeyS'
-      || code === 'KeyD'
-      || code === 'ArrowUp'
-      || code === 'ArrowLeft'
-      || code === 'ArrowDown'
-      || code === 'ArrowRight';
+  private onKeyUp = (event: KeyboardEvent): void => {
+    this.keys.delete(event.code);
+  };
+
+  private required<T extends Element>(selector: string): T {
+    const element = this.root.querySelector<T>(selector);
+    if (!element) throw new Error(`Missing control: ${selector}`);
+    return element;
   }
 }
