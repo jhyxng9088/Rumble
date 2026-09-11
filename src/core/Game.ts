@@ -3,10 +3,10 @@ import { Color3 } from '@babylonjs/core/Maths/math.color';
 import { Vector3 } from '@babylonjs/core/Maths/math.vector';
 import { Scene } from '@babylonjs/core/scene';
 import { FollowCamera } from '../camera/FollowCamera';
-import { StylizedFighter } from '../character/StylizedFighter';
-import { CombatSystem } from '../combat/CombatSystem';
+import { AnimalFighter } from '../character/AnimalFighter';
 import { ImpactEffects } from '../effects/ImpactEffects';
 import { InputController } from '../input/InputController';
+import { ThrowableSystem } from '../throwing/ThrowableSystem';
 import { GameUI } from '../ui/GameUI';
 import { ArenaWorld } from '../world/ArenaWorld';
 
@@ -14,12 +14,12 @@ export class Game {
   private readonly engine: Engine;
   private readonly scene: Scene;
   private readonly world: ArenaWorld;
-  private readonly player: StylizedFighter;
-  private readonly rival: StylizedFighter;
+  private readonly player: AnimalFighter;
+  private readonly rival: AnimalFighter;
   private readonly camera: FollowCamera;
   private readonly input: InputController;
   private readonly effects: ImpactEffects;
-  private readonly combat: CombatSystem;
+  private readonly throwing: ThrowableSystem;
   private readonly ui: GameUI;
   private rivalThink = 0;
 
@@ -29,19 +29,19 @@ export class Game {
     this.applyResolutionCap();
     this.scene = new Scene(this.engine);
     this.world = new ArenaWorld(this.scene);
-    this.player = new StylizedFighter(this.scene, 'player', {
-      name: 'YOU', spawn: new Vector3(-1.8, 0.02, -0.45),
-      palette: { skin: new Color3(0.80,0.58,0.42), top: new Color3(0.12,0.25,0.78), topDark: new Color3(0.035,0.07,0.22), pants: new Color3(0.08,0.09,0.14), glove: new Color3(0.95,0.16,0.09), shoe: new Color3(0.90,0.91,0.94) }
+    this.player = new AnimalFighter(this.scene, 'player', {
+      name: 'FOX', kind: 'fox', spawn: new Vector3(-2.2, 0.02, -0.8),
+      palette: { fur: new Color3(0.92, 0.35, 0.08), furLight: new Color3(0.98, 0.82, 0.63), furDark: new Color3(0.16, 0.10, 0.09), accent: new Color3(0.10, 0.46, 0.92) },
     });
-    this.rival = new StylizedFighter(this.scene, 'rival', {
-      name: 'RIVAL', spawn: new Vector3(1.8, 0.02, 0.45),
-      palette: { skin: new Color3(0.62,0.42,0.31), top: new Color3(0.33,0.12,0.62), topDark: new Color3(0.09,0.035,0.17), pants: new Color3(0.09,0.10,0.12), glove: new Color3(0.08,0.78,0.67), shoe: new Color3(0.13,0.15,0.18) }
+    this.rival = new AnimalFighter(this.scene, 'rival', {
+      name: 'RACCOON', kind: 'raccoon', spawn: new Vector3(2.4, 0.02, 0.8),
+      palette: { fur: new Color3(0.48, 0.51, 0.55), furLight: new Color3(0.76, 0.77, 0.75), furDark: new Color3(0.10, 0.11, 0.13), accent: new Color3(0.26, 0.78, 0.58) },
     });
     const midpoint = this.player.position.add(this.rival.position).scale(0.5);
     this.camera = new FollowCamera(this.scene, midpoint);
     this.effects = new ImpactEffects(this.scene);
-    this.combat = new CombatSystem(this.effects, this.camera);
-    this.input = new InputController(ui.joystickElement, ui.lightButton, ui.heavyButton, ui.dodgeButton);
+    this.throwing = new ThrowableSystem(this.scene, this.effects, this.camera);
+    this.input = new InputController(ui.joystickElement, ui.pickupButton, ui.throwButton, ui.dodgeButton);
     window.addEventListener('resize', this.handleResize, { passive: true });
     document.addEventListener('visibilitychange', this.handleVisibilityChange);
   }
@@ -49,11 +49,11 @@ export class Game {
   start(): void {
     this.engine.runRenderLoop(() => {
       const deltaSeconds = Math.min(this.engine.getDeltaTime() / 1000, 1 / 30);
-      if (!this.combat.consumeHitStop(deltaSeconds)) this.update(deltaSeconds);
+      if (!this.throwing.consumeHitStop(deltaSeconds)) this.update(deltaSeconds);
       this.effects.update(deltaSeconds);
       const target = this.player.position.add(this.rival.position).scale(0.5);
       this.camera.update(deltaSeconds, target);
-      this.ui.update(this.player, this.rival);
+      this.ui.update(this.player, this.rival, this.throwing.heldLabel(this.player));
       this.scene.render();
     });
   }
@@ -69,36 +69,55 @@ export class Game {
     this.rival.faceTarget(this.player.position, deltaSeconds);
     this.player.move(deltaSeconds, worldDirection, movement.length());
 
-    if (actions.light) this.player.startAttack('light');
-    if (actions.heavy) this.player.startAttack('heavy');
+    if (actions.pickup) this.throwing.tryPickup(this.player);
+    if (actions.throwItem) {
+      const targetDirection = this.rival.position.subtract(this.player.position);
+      targetDirection.y = 0;
+      this.throwing.throwHeld(this.player, targetDirection);
+    }
     if (actions.dodge) this.player.startDodge(worldDirection);
 
     this.updateRival(deltaSeconds);
-    this.combat.resolve(this.player, this.rival);
-    this.combat.resolve(this.rival, this.player);
+    this.throwing.update(deltaSeconds, this.player, this.rival);
     this.world.constrainPlayerPosition(this.player.position, this.player.collisionRadius);
     this.world.constrainPlayerPosition(this.rival.position, this.rival.collisionRadius);
   }
 
   private updateRival(deltaSeconds: number): void {
-    if (this.rival.state === 'ko' || this.player.state === 'ko') return;
-    const delta = this.player.position.subtract(this.rival.position);
-    delta.y = 0;
-    const distance = delta.length();
+    if (!this.rival.isAlive || !this.player.isAlive) return;
     this.rivalThink -= deltaSeconds;
-    if (this.rivalThink <= 0) {
-      this.rivalThink = 0.17 + Math.random() * 0.16;
-      if (this.player.state === 'attack' && distance < 2.1 && Math.random() < 0.40) {
-        const evade = Vector3.Cross(Vector3.Up(), delta.normalizeToNew()).scale(Math.random() < 0.5 ? 1 : -1);
-        this.rival.startDodge(evade);
-        return;
+    const toPlayer = this.player.position.subtract(this.rival.position);
+    toPlayer.y = 0;
+    const playerDistance = toPlayer.length();
+
+    if (this.throwing.hasHeld(this.rival)) {
+      if (this.rivalThink <= 0 && playerDistance < 7.4) {
+        this.rivalThink = 0.55 + Math.random() * 0.42;
+        const aim = toPlayer.clone();
+        aim.x += (Math.random() - 0.5) * 0.55;
+        aim.z += (Math.random() - 0.5) * 0.55;
+        this.throwing.throwHeld(this.rival, aim);
+      } else if (playerDistance > 4.8) {
+        this.rival.move(deltaSeconds * 0.76, toPlayer.normalizeToNew(), 0.78);
       }
-      if (distance < 1.68 && Math.random() < 0.68) {
-        this.rival.startAttack(Math.random() < 0.76 ? 'light' : 'heavy');
-        return;
-      }
+      return;
     }
-    if (distance > 1.35) this.rival.move(deltaSeconds * 0.82, delta.normalizeToNew(), 0.92);
+
+    const pickupTarget = this.throwing.nearestGroundPosition(this.rival.position);
+    if (!pickupTarget) return;
+    const toItem = pickupTarget.subtract(this.rival.position);
+    toItem.y = 0;
+    if (toItem.length() <= 1.22) {
+      this.throwing.tryPickup(this.rival);
+      this.rivalThink = 0.28;
+      return;
+    }
+    this.rival.move(deltaSeconds * 0.84, toItem.normalizeToNew(), 0.92);
+
+    if (this.rivalThink <= 0 && playerDistance < 2.2 && Math.random() < 0.25) {
+      this.rival.startDodge(Vector3.Cross(Vector3.Up(), toPlayer.normalizeToNew()));
+      this.rivalThink = 0.7;
+    }
   }
 
   private readonly handleResize = (): void => {

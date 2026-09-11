@@ -1,16 +1,24 @@
-# RUMBLE 3D Combat Rebuild
+# RUMBLE Animal Throw Brawl — First Playable Slice
 
-Success criterion: two fighters in one compact 3D arena must already feel responsive and visually intentional before multiplayer or progression work starts.
+Success criterion: grabbing a random object and landing one throw must already feel funny and satisfying.
 
-This rebuild keeps scope intentionally small:
-- one rooftop arena
-- player + rival
+Included:
+- fox player
+- raccoon rival AI
 - movement
-- light / heavy attack
+- grab
+- throw
 - dodge
-- hit-stop / hit-stun / knockback
-- impact effects
-- camera impulse
-- mobile-first controls
+- rock / crate / bomb
+- direct projectile hits
+- bomb explosions
+- health / KO
+- hit-stop, impact effects and camera impulse
 
-No backend, login, ranking, shop, skins, battle pass, or online multiplayer yet.
+Not included yet:
+- online multiplayer
+- character selection
+- more animal species
+- throw charging / manual aiming
+- special abilities
+- progression / shop / backend
