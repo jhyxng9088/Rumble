@@ -1,16 +1,19 @@
 # RUMBLE
 
-Mobile-first stylized 3D brawler prototype.
+Mobile-first 3D animal throw-brawl prototype.
 
-## Current prototype
+## Current direction
 
-- Babylon.js 3D rooftop arena
-- two stylized humanoid fighters
-- mobile joystick movement
-- light / heavy / dodge combat
-- guard stance, punch anticipation/follow-through, hurt/KO poses
-- hit-stop, knockback, impact bursts, camera shake and FOV punch
-- lightweight rival AI
-- health + rage HUD
+RUMBLE is no longer a boxing prototype. The combat loop is built around cute animal characters grabbing objects from the arena and throwing them at each other.
 
-The temporary 2.5D version remains preserved in git history as a rollback point. The current direction is 3D again, but the old primitive-bear character direction is retired.
+Current playable slice:
+- fox vs raccoon AI
+- free 3D arena movement
+- grab / throw / dodge controls
+- rock, crate and bomb throwables
+- projectile arcs and object states
+- direct-hit damage, knockback and hit-stop
+- bomb blast radius and respawn
+- health HUD and win state
+
+The goal is to make the throw / hit / knockback loop fun before adding more animals, maps, multiplayer or progression.

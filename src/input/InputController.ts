@@ -1,8 +1,8 @@
-import { Vector2, Vector3 } from '@babylonjs/core/Maths/math.vector';
+import { Vector2 } from '@babylonjs/core/Maths/math.vector';
 
 export interface ActionFrame {
-  light: boolean;
-  heavy: boolean;
+  pickup: boolean;
+  throwItem: boolean;
   dodge: boolean;
 }
 
@@ -13,14 +13,14 @@ export class InputController {
   private centerY = 0;
   private maxRadius = 1;
   private readonly pressedKeys = new Set<string>();
-  private lightQueued = false;
-  private heavyQueued = false;
+  private pickupQueued = false;
+  private throwQueued = false;
   private dodgeQueued = false;
 
   constructor(
     private readonly joystick: HTMLElement,
-    lightButton: HTMLButtonElement,
-    heavyButton: HTMLButtonElement,
+    pickupButton: HTMLButtonElement,
+    throwButton: HTMLButtonElement,
     dodgeButton: HTMLButtonElement,
   ) {
     joystick.addEventListener('pointerdown', this.handlePointerDown, { passive: false });
@@ -29,8 +29,8 @@ export class InputController {
     window.addEventListener('pointercancel', this.handlePointerEnd, { passive: false });
     window.addEventListener('keydown', this.handleKeyDown);
     window.addEventListener('keyup', this.handleKeyUp);
-    this.bindAction(lightButton, () => { this.lightQueued = true; });
-    this.bindAction(heavyButton, () => { this.heavyQueued = true; });
+    this.bindAction(pickupButton, () => { this.pickupQueued = true; });
+    this.bindAction(throwButton, () => { this.throwQueued = true; });
     this.bindAction(dodgeButton, () => { this.dodgeQueued = true; });
   }
 
@@ -44,17 +44,11 @@ export class InputController {
   }
 
   readActions(): ActionFrame {
-    const frame = { light: this.lightQueued, heavy: this.heavyQueued, dodge: this.dodgeQueued };
-    this.lightQueued = false;
-    this.heavyQueued = false;
+    const frame = { pickup: this.pickupQueued, throwItem: this.throwQueued, dodge: this.dodgeQueued };
+    this.pickupQueued = false;
+    this.throwQueued = false;
     this.dodgeQueued = false;
     return frame;
-  }
-
-  movementWorld(fallbackForward: Vector3): Vector3 {
-    const move = this.movement;
-    if (move.lengthSquared() < 0.001) return fallbackForward.scale(0);
-    return new Vector3(move.x, 0, move.y).normalize();
   }
 
   reset(): void {
@@ -110,8 +104,8 @@ export class InputController {
       event.preventDefault();
     }
     if (event.repeat) return;
-    if (event.code === 'KeyJ') this.lightQueued = true;
-    if (event.code === 'KeyK') this.heavyQueued = true;
+    if (event.code === 'KeyJ' || event.code === 'KeyE') this.pickupQueued = true;
+    if (event.code === 'KeyK' || event.code === 'KeyF') this.throwQueued = true;
     if (event.code === 'Space' || event.code === 'KeyL') {
       event.preventDefault();
       this.dodgeQueued = true;
