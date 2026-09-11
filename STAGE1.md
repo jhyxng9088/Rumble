@@ -1,18 +1,20 @@
-# Stage 1 acceptance
+# RUMBLE 2.5D Combat Foundation
 
-Stage 1 stays limited to the first playable movement slice.
+The old Babylon 3D prototype has been retired.
 
-## Included
-- One small 3D rooftop arena
-- One toy-like player character
-- Fixed diagonal top-down camera
-- Screen-relative movement
-- Direct-owned virtual joystick input
-- Static collision against arena walls and obstacles
-- Mobile DPR cap and safe-area aware HUD
+The new success criterion is simple: one player and one rival must already feel responsive and punchy on a phone before more characters, modes, progression, or multiplayer are added.
 
-## Not included yet
-Combat, opponent AI, attacks, dash, knockback, hit-stop, effects, scoring, audio polish, and multiplayer remain outside Stage 1.
+Implemented in this foundation:
 
-## Architecture rule
-`core/Game.ts` coordinates the frame. Input, character, camera, world, and UI each own one responsibility. Do not add patch files, fake DOM clicks, MutationObserver ownership, or duplicate input listeners.
+- Canvas 2D pseudo-3D arena projection
+- direct mobile joystick movement
+- light / heavy / dodge controls
+- basic rival AI
+- attack windows and range checks
+- hit-stop, hit-stun, knockback
+- dodge invulnerability
+- impact particles
+- camera shake and zoom punch
+- health and rage HUD
+
+No networking, accounts, store, skins, backend, or 3D runtime.

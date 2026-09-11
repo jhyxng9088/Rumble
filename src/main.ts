@@ -1,21 +1,16 @@
 import './styles.css';
 import { Game } from './core/Game';
-import { GameUI } from './ui/GameUI';
 
 const canvas = document.querySelector<HTMLCanvasElement>('#game-canvas');
-const hudRoot = document.querySelector<HTMLDivElement>('#hud-root');
+const uiHost = document.querySelector<HTMLElement>('#hud-root');
 
-if (!canvas || !hudRoot) {
-  throw new Error('RUMBLE root elements are missing.');
-}
-
-const ui = new GameUI(hudRoot);
+if (!canvas || !uiHost) throw new Error('RUMBLE root elements are missing');
 
 try {
-  const game = new Game(canvas, ui.joystickElement);
-  ui.markReady();
+  const game = new Game(canvas, uiHost);
   game.start();
+  window.addEventListener('pagehide', () => game.destroy(), { once: true });
 } catch (error) {
-  console.error('[RUMBLE] Stage 1 bootstrap failed', error);
-  ui.showFatal(error);
+  console.error(error);
+  uiHost.innerHTML = `<div class="boot-error">RUMBLE failed to start.<br><small>${error instanceof Error ? error.message : 'Unknown error'}</small></div>`;
 }
